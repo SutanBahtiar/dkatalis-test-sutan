@@ -1,0 +1,5 @@
+package dkatalis.bank.enums;
+
+public enum Commands {
+    LOGIN, DEPOSIT, WITHDRAW, TRANSFER, LOGOUT, ADMIN
+}
