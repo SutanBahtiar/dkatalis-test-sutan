@@ -52,7 +52,7 @@ public interface TransactionService {
     Map<String, Double> getTotalAmountByToCustomerNameWithCustomerNameMap(String toCustomerName,
                                                                           TransactionCode transactionCode);
 
-    Map<String, Double> getTotalOwedAmount(String CustomerName);
+    Map<String, Double> getTotalOwedAmountMap(String CustomerName);
 
     void remove(String trxId);
 }

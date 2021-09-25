@@ -21,11 +21,6 @@ public class TransactionDaoImpl extends MapDao<Transaction> implements Transacti
     }
 
     @Override
-    public Transaction getTransaction(long transactionId) {
-        return super.get(transactionId);
-    }
-
-    @Override
     public List<Transaction> getTransactionList() {
         return super.getList();
     }

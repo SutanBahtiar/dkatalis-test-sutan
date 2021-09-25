@@ -161,7 +161,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Map<String, Double> getTotalOwedAmount(String customerName) {
+    public Map<String, Double> getTotalOwedAmountMap(String customerName) {
         // owed to
         final Map<String, Double> owedAmountToMap =
                 getTotalAmountByCustomerNameWithToCustomerNameMap(customerName, TransactionCode.OWED);
@@ -177,7 +177,7 @@ public class TransactionServiceImpl implements TransactionService {
         if (!owedAmountToMap.isEmpty() && owedAmountFromMap.isEmpty())
             return owedAmountToMap;
 
-        if (owedAmountToMap.isEmpty() && !owedAmountFromMap.isEmpty())
+        if (owedAmountToMap.isEmpty())
             return owedAmountFromMap;
 
         for (String customer : owedAmountToMap.keySet()) {

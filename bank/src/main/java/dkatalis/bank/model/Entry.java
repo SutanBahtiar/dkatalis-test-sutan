@@ -72,13 +72,4 @@ public class Entry {
     public void setCreatedDate(Date createdDate) {
         this.createdDate = createdDate;
     }
-
-    @Override
-    public String toString() {
-        return "{" +
-                "customerName='" + customerName + '\'' +
-                ", transactionCode=" + transactionCode +
-                ", amount=" + amount +
-                '}';
-    }
 }

@@ -30,6 +30,9 @@ public class Client {
             out = new PrintWriter(clientSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
+            System.out.println("Connecting to server..");
+            System.out.println("Connected with " + ip + ":" + port);
+
             // default customer if not logged
             final String unknownCustomerName = "-";
 
@@ -72,6 +75,7 @@ public class Client {
                                 message = responseMessage[1];
                             }
 
+                            System.out.println();
                             System.out.println(message);
                             message = in.readLine();
                         }

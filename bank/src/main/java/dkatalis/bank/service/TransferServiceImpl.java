@@ -8,8 +8,6 @@ import dkatalis.bank.util.Generator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +47,9 @@ public class TransferServiceImpl implements TransferService {
                 return TRANSFER_NOT_ALLOWED;
             }
 
+            if (customerName.equalsIgnoreCase(toCustomerName))
+                return TRANSFER_NOT_ALLOWED;
+
             // transfer amount
             double transferAmount = amount;
 
@@ -77,15 +78,6 @@ public class TransferServiceImpl implements TransferService {
                     // save transaction as deduction owed
                     transactionService.createTransaction(customerName, toCustomerName, TransactionCode.OWED, owedAmount, transferId, trxId);
                 }
-
-//                else {
-//                    // save transaction as deduction owed
-//                    transactionService.createTransaction(customerName, toCustomerName, TransactionCode.OWED, owedAmount, transferId, trxId);
-//                    // save as transfer to update the balance toCustomerName
-//                    transactionService.createTransaction(customerName, toCustomerName, TransactionCode.TRANSFER, diffAmount, transferId, trxId);
-//                    // save as withdraw(minus) to deduction the balance customerName
-//                    transactionService.createTransaction(customerName, toCustomerName, TransactionCode.WITHDRAW, diffAmount * -1, transferId, trxId);
-//                }
 
                 // update transfer amount
                 transferAmount = diffAmount;
@@ -124,58 +116,5 @@ public class TransferServiceImpl implements TransferService {
     @Override
     public List<Transfer> getTransferList() {
         return dao.getTransferList();
-    }
-
-    @Override
-    public List<Transfer> getTransferList(String customerName) {
-        final List<Transfer> transferList = new ArrayList<>();
-        for (Transfer transfer : getTransferList()) {
-            if (customerName.equals(transfer.getCustomerName()))
-                transferList.add(transfer);
-        }
-        return transferList;
-    }
-
-    @Override
-    public List<Transfer> getTransferList(String customerName,
-                                          String toCustomerName) {
-        final List<Transfer> transferList = new ArrayList<>();
-        for (Transfer transfer : getTransferList(customerName)) {
-            if (toCustomerName.equals(transfer.getToCustomerName()))
-                transferList.add(transfer);
-        }
-        return transferList;
-    }
-
-    @Override
-    public double getTotalAmount(String customerName) {
-        double totalAmount = 0;
-        for (Transfer transfer : getTransferList(customerName)) {
-            totalAmount += transfer.getAmount();
-        }
-        return totalAmount;
-    }
-
-    @Override
-    public double getTotalAmount(String customerName,
-                                 String toCustomerName) {
-        double totalAmount = 0;
-        for (Transfer transfer : getTransferList(customerName, toCustomerName)) {
-            totalAmount += transfer.getAmount();
-        }
-        return totalAmount;
-    }
-
-    @Override
-    public Map<String, Double> getTotalAmountWithToCustomerNameMap(String customerName) {
-        final Map<String, Double> maps = new HashMap<>();
-        for (Transfer transfer : getTransferList(customerName)) {
-            final Double amount = maps.get(transfer.getCustomerName());
-            if (null == amount)
-                maps.put(transfer.getToCustomerName(), transfer.getAmount());
-            else
-                maps.put(transfer.getToCustomerName(), amount + transfer.getAmount());
-        }
-        return maps;
     }
 }

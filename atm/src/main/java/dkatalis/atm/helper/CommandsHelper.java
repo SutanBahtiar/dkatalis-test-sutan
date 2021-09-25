@@ -84,6 +84,9 @@ public class CommandsHelper {
 
     public static String setHelpMessage(String customerName,
                                         Commands commands) {
+        if (null == commands)
+            return MessageHelper.helpMessage();
+
         if (UNKNOWN_CUSTOMER_NAME.equals(customerName))
             return setHelpMessage(Commands.LOGIN);
 
@@ -94,6 +97,9 @@ public class CommandsHelper {
     }
 
     public static String setHelpMessage(Commands commands) {
+        if (null == commands)
+            return MessageHelper.helpMessage();
+
         switch (commands) {
             case LOGIN:
                 return MessageHelper.helpLoginMessage();
@@ -118,6 +124,11 @@ public class CommandsHelper {
         if (!StringUtils.isNumeric(amount))
             return false;
 
+        return parseDouble(amount);
+    }
+
+    public static boolean parseDouble(String amount) {
+        if (null == amount) return false;
         try {
             Double.parseDouble(amount);
             return true;
@@ -146,14 +157,6 @@ public class CommandsHelper {
 
         public String getHelpMessage() {
             return helpMessage;
-        }
-
-        @Override
-        public String toString() {
-            return "Message{" +
-                    "message='" + message + '\'' +
-                    ", helpMessage='" + helpMessage + '\'' +
-                    '}';
         }
     }
 

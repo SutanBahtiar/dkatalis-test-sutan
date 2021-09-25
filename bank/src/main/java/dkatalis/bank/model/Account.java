@@ -34,12 +34,4 @@ public class Account {
     public void setCreatedDate(Date createdDate) {
         this.createdDate = createdDate;
     }
-
-    @Override
-    public String toString() {
-        return "{" +
-                "customerName='" + customerName + '\'' +
-                ", refId='" + refId + '\'' +
-                '}';
-    }
 }

@@ -18,6 +18,7 @@ import static dkatalis.bank.model.Transfer.TRANSFER_NOT_ALLOWED;
 public class AtmServiceImpl implements AtmService {
 
     private static final Logger log = LoggerFactory.getLogger(AtmServiceImpl.class);
+    private static final String UNKNOWN_CUSTOMER_NAME = "-";
 
     private final AccountService accountService;
     private final EntryService entryService;
@@ -42,7 +43,8 @@ public class AtmServiceImpl implements AtmService {
 
         // expected message: customerNameLogin|Commands.LOGIN|customerName
         final String[] messages = AtmHelper.messages(message);
-        if (messages.length < 3) return null;
+        if (messages.length < 3)
+            return null;
 
         // get commands
         final Commands commands = AtmHelper.commands(messages);
@@ -52,22 +54,23 @@ public class AtmServiceImpl implements AtmService {
         // get customerName login
         final String customerNameLogin = AtmHelper.customerName(messages);
         // check customerName its already logged on or not
-        if (!"-".equals(customerNameLogin)) return null;
+        if (!UNKNOWN_CUSTOMER_NAME.equals(customerNameLogin))
+            return null;
 
         // get customerName param
         final String customerName = AtmHelper.customerNameParam(messages);
-        if (null == customerName) return null;
 
         // check customerName param have account or not, if not create the account
         if (null == accountService.getAccount(customerName))
-            if (null == accountService.createAccount(customerName, refId)) return null;
+            if (null == accountService.createAccount(customerName, refId))
+                return null;
 
         return doLogin(customerName);
     }
 
     public String doLogin(String customerName) {
         final double balanceAmount = transactionService.getBalanceAmount(customerName);
-        final Map<String, Double> owedAmountMap = transactionService.getTotalOwedAmount(customerName);
+        final Map<String, Double> owedAmountMap = transactionService.getTotalOwedAmountMap(customerName);
         return AtmHelper.createLoginMessage(customerName, balanceAmount, owedAmountMap);
     }
 
@@ -79,7 +82,8 @@ public class AtmServiceImpl implements AtmService {
 
         // expected message: customerNameLogin|Commands.DEPOSIT|amount
         final String[] messages = AtmHelper.messages(message);
-        if (messages.length < 3) return null;
+        if (messages.length < 3)
+            return null;
 
         // get commands
         final Commands commands = AtmHelper.commands(messages);
@@ -89,7 +93,8 @@ public class AtmServiceImpl implements AtmService {
         // get customerName login
         final String customerNameLogin = AtmHelper.customerName(messages);
         // check customerName its already logged on or not
-        if ("-".equals(customerNameLogin)) return null;
+        if (UNKNOWN_CUSTOMER_NAME.equals(customerNameLogin))
+            return null;
 
         // check account
         if (null == accountService.getAccount(customerNameLogin))
@@ -97,7 +102,8 @@ public class AtmServiceImpl implements AtmService {
 
         // get amount
         final double amount = AtmHelper.amount(messages);
-        if (amount == AtmHelper.AMOUNT_NOT_ELIGIBLE) return null;
+        if (amount == AtmHelper.AMOUNT_NOT_ELIGIBLE)
+            return null;
 
         return doDeposit(customerNameLogin, amount, refId);
     }
@@ -106,7 +112,7 @@ public class AtmServiceImpl implements AtmService {
                             double amount,
                             String refId) {
         // save deposit
-        final long entryId = entryService.createEntry(customerName, TransactionCode.DEPOSIT, amount, refId);
+        final long entryId = entryService.createDeposit(customerName, amount, refId);
 
         // balance amount after deposit
         final double balanceAmount = transactionService.getBalanceAmount(customerName);
@@ -114,7 +120,7 @@ public class AtmServiceImpl implements AtmService {
         // get transferred owed
         final List<Transaction> owedTransferList = transactionService.getTransactionList(customerName, TransactionCode.OWED, entryId);
         if (!owedTransferList.isEmpty()) {
-            final Map<String, Double> owedAmountMap = transactionService.getTotalOwedAmount(customerName);
+            final Map<String, Double> owedAmountMap = transactionService.getTotalOwedAmountMap(customerName);
             return AtmHelper.createDepositMessage(balanceAmount, owedTransferList, owedAmountMap);
         }
 
@@ -124,7 +130,51 @@ public class AtmServiceImpl implements AtmService {
     @Override
     public String withdraw(String message,
                            String refId) {
-        return null;
+        if (log.isDebugEnabled())
+            log.debug("{}, call withdraw commands, message:{}", refId, message);
+
+        // expected message: customerNameLogin|Commands.WITHDRAW|amount
+        final String[] messages = AtmHelper.messages(message);
+        if (messages.length < 3)
+            return null;
+
+        // get commands
+        final Commands commands = AtmHelper.commands(messages);
+        if (commands != Commands.WITHDRAW)
+            return null;
+
+        // get customerName login
+        final String customerNameLogin = AtmHelper.customerName(messages);
+        // check customerName its already logged on or not
+        if (UNKNOWN_CUSTOMER_NAME.equals(customerNameLogin))
+            return null;
+
+        // check account
+        if (null == accountService.getAccount(customerNameLogin))
+            return null;
+
+        // get amount
+        final double amount = AtmHelper.amount(messages);
+        if (amount == AtmHelper.AMOUNT_NOT_ELIGIBLE)
+            return null;
+
+        return doWithdraw(customerNameLogin, amount, refId);
+    }
+
+    public String doWithdraw(String customerName,
+                             double amount,
+                             String refId) {
+        // save withdraw
+        final long entryId = entryService.createWithdraw(customerName, amount, refId);
+        if (TRANSFER_NOT_ALLOWED != entryId) {
+            final double balanceAmount = transactionService.getBalanceAmount(customerName);
+            return AtmHelper.createWithdrawMessage(balanceAmount);
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("{}, balance is not sufficient..", refId);
+
+        return AtmHelper.createWithdrawMessage(0);
     }
 
     @Override
@@ -135,7 +185,8 @@ public class AtmServiceImpl implements AtmService {
 
         // expected message: customerNameLogin|Commands.TRANSFER|toCustomerName|amount
         final String[] messages = AtmHelper.messages(message);
-        if (messages.length < 4) return null;
+        if (messages.length < 4)
+            return null;
 
         // get commands
         final Commands commands = AtmHelper.commands(messages);
@@ -145,7 +196,8 @@ public class AtmServiceImpl implements AtmService {
         // get customerName login
         final String customerNameLogin = AtmHelper.customerName(messages);
         // check customerName its already logged on or not
-        if ("-".equals(customerNameLogin)) return null;
+        if (UNKNOWN_CUSTOMER_NAME.equals(customerNameLogin))
+            return null;
 
         // check account
         if (null == accountService.getAccount(customerNameLogin))
@@ -157,9 +209,13 @@ public class AtmServiceImpl implements AtmService {
         if (null == accountService.getAccount(toCustomerName))
             return null;
 
+        if (customerNameLogin.equalsIgnoreCase(toCustomerName))
+            return null;
+
         // get amount
         final double amount = AtmHelper.transferAmount(messages);
-        if (amount == AtmHelper.AMOUNT_NOT_ELIGIBLE) return null;
+        if (amount == AtmHelper.AMOUNT_NOT_ELIGIBLE)
+            return null;
 
         return doTransfer(customerNameLogin, toCustomerName, amount, refId);
     }
@@ -173,7 +229,7 @@ public class AtmServiceImpl implements AtmService {
 
         // check owed before transaction
         double owedAmount = 0;
-        Map<String, Double> mapAmountMap = transactionService.getTotalOwedAmount(customerName);
+        Map<String, Double> mapAmountMap = transactionService.getTotalOwedAmountMap(customerName);
         if (!mapAmountMap.isEmpty())
             owedAmount = mapAmountMap.get(toCustomerName);
 
@@ -191,7 +247,7 @@ public class AtmServiceImpl implements AtmService {
         balanceAmount = transactionService.getBalanceAmount(customerName);
 
         // check owed after transaction
-        mapAmountMap = transactionService.getTotalOwedAmount(customerName);
+        mapAmountMap = transactionService.getTotalOwedAmountMap(customerName);
         if (!mapAmountMap.isEmpty())
             owedAmount = mapAmountMap.get(toCustomerName);
 
@@ -206,12 +262,14 @@ public class AtmServiceImpl implements AtmService {
 
         // expected message: customerNameLogin|Commands.LOGOUT
         final String[] messages = AtmHelper.messages(message);
-        if (messages.length < 2) return null;
+        if (messages.length < 2)
+            return null;
 
         // get customerName login
         final String customerNameLogin = AtmHelper.customerName(messages);
         // check customerName its already logged on or not
-        if ("-".equals(customerNameLogin)) return null;
+        if (UNKNOWN_CUSTOMER_NAME.equals(customerNameLogin))
+            return null;
 
         return AtmHelper.createLogoutMessage(customerNameLogin);
     }
@@ -224,7 +282,8 @@ public class AtmServiceImpl implements AtmService {
 
         // expected message: customerNameLogin|Commands.ADMIN
         final String[] messages = AtmHelper.messages(message);
-        if (messages.length < 2) return null;
+        if (messages.length < 2)
+            return null;
 
         // get commands
         final Commands commands = AtmHelper.commands(messages);
@@ -242,22 +301,24 @@ public class AtmServiceImpl implements AtmService {
 
         System.out.println();
         System.out.println("[TRANSACTION]");
-        System.out.printf("%-20s %-15s %-15s %-15s %-10s %-20s %-20s\n"
+        System.out.printf("%-20s %-15s %-15s %-15s %-10s %-15s %-20s %-20s\n"
                 , "TransactionId"
                 , "CustomerName"
                 , "ToCustomerName"
                 , "TransactionCode"
                 , "Amount"
+                , "TrxId"
                 , "Table Id"
                 , "CreatedDate"
         );
         for (Transaction transaction : sortTransaction) {
-            System.out.printf("%-20s %-15s %-15s %-15s %-10s %-20s %-20s\n"
+            System.out.printf("%-20s %-15s %-15s %-15s %-10s %-15s %-20s %-20s\n"
                     , transaction.getTransactionId()
                     , transaction.getCustomerName()
                     , transaction.getToCustomerName()
                     , transaction.getTransactionCode().name()
                     , transaction.getAmount()
+                    , transaction.getTrxId()
                     , transaction.getTableId()
                     , transaction.getCreatedDate()
             );
@@ -269,19 +330,23 @@ public class AtmServiceImpl implements AtmService {
         final List<Entry> sortEntry = entryService.getEntryList();
         sortEntry.sort(Comparator.comparing(Entry::getEntryId));
 
-        System.out.printf("%-20s %-15s %-15s %-10s %-20s\n"
+        System.out.printf("%-20s %-15s %-15s %-10s %-15s %-15s %-20s\n"
                 , "EntryId"
                 , "CustomerName"
                 , "TransactionCode"
                 , "Amount"
+                , "TrxId"
+                , "RefId"
                 , "CreatedDate"
         );
         for (Entry entry : sortEntry) {
-            System.out.printf("%-20s %-15s %-15s %-10s %-20s\n"
+            System.out.printf("%-20s %-15s %-15s %-10s %-15s %-15s %-20s\n"
                     , entry.getEntryId()
                     , entry.getCustomerName()
                     , entry.getTransactionCode().name()
                     , entry.getAmount()
+                    , entry.getTrxId()
+                    , entry.getRefId()
                     , entry.getCreatedDate()
             );
         }

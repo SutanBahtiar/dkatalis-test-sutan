@@ -82,6 +82,10 @@ public class AtmHelper {
         return "Your balance is $" + balance;
     }
 
+    public static String createWithdrawMessage(double balance) {
+        return createDepositMessage(balance);
+    }
+
     public static String createLoginMessage(String customerName,
                                             double balance,
                                             Map<String, Double> owedAmountMap) {

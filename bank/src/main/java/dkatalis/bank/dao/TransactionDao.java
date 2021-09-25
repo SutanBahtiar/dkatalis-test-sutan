@@ -8,8 +8,6 @@ public interface TransactionDao {
 
     long createTransaction(Transaction transaction);
 
-    Transaction getTransaction(long transactionId);
-
     List<Transaction> getTransactionList();
 
     void remove(String trxId);

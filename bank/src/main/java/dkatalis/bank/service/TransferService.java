@@ -3,7 +3,6 @@ package dkatalis.bank.service;
 import dkatalis.bank.model.Transfer;
 
 import java.util.List;
-import java.util.Map;
 
 public interface TransferService {
 
@@ -15,16 +14,4 @@ public interface TransferService {
     Transfer getTransfer(long transferId);
 
     List<Transfer> getTransferList();
-
-    List<Transfer> getTransferList(String customerName);
-
-    List<Transfer> getTransferList(String customerName,
-                                   String toCustomerName);
-
-    double getTotalAmount(String customerName);
-
-    double getTotalAmount(String customerName,
-                          String toCustomerName);
-
-    Map<String, Double> getTotalAmountWithToCustomerNameMap(String customerName);
 }
